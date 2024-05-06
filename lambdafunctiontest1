@@ -1,0 +1,15 @@
+# import the JSON utility package
+import json
+# import the Python math library
+import math
+
+def lambda_handler(event, context):
+
+    # Add two number
+    mathResult = floor(event['base']) + floor(event['exponent'])
+
+
+    return {
+    'statusCode': 200,
+    'body': json.dumps('Your result is ' + str(mathResult))
+    }

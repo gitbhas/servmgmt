@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Add two number A and B</title>
+    <!-- Styling for the client UI -->
+    <style>
+    h1 {
+    color: #ff6f61; /* coral */
+    font-family: system-ui;
+    margin-left: 20px;
+}
+
+/* Define the styles for body */
+body {
+    background-color: #2c3e50; /* midnight blue */
+}
+
+/* Define the styles for labels */
+label {
+    color: #f3b745; /* mustard yellow */
+    font-family: system-ui;
+    font-size: 20px;
+    margin-left: 20px;
+    margin-top: 20px;
+}
+
+/* Define the styles for buttons */
+button {
+    background-color: #70a1ff; /* dodger blue */
+    border-color: #70a1ff;
+    color: #FFFFFF;
+    font-family: system-ui;
+    font-size: 20px;
+    font-weight: bold;
+    margin-left: 30px;
+    margin-top: 20px;
+    width: 140px;
+}
+
+/* Define the styles for inputs */
+input {
+    color: #2ecc71; /* emerald green */
+    font-family: system-ui;
+    font-size: 20px;
+    margin-left: 10px;
+    margin-top: 20px;
+    width: 100px;
+}
+    </style>
+    <script>
+        // callAPI function that takes the base and exponent numbers as parameters
+        var callAPI = (A,B)=>{
+            // instantiate a headers object
+            var myHeaders = new Headers();
+            // add content type header to object
+            myHeaders.append("Content-Type", "application/json");
+            // using built in JSON utility package turn object to string and store in a variable
+            var raw = JSON.stringify({"A":A,"B":B});
+            // create a JSON object with parameters for API call and store in a variable
+            var requestOptions = {
+                method: 'POST',
+                headers: myHeaders,
+                body: raw,
+                redirect: 'follow'
+            };
+            // make API call with parameters and use promises to get response
+            fetch("https://zhh2h87zci.execute-api.us-east-1.amazonaws.com/dev", requestOptions)
+            .then(response => response.text())
+            .then(result => alert(JSON.parse(result).body))
+            .catch(error => console.log('error', error));
+        }
+    </script>
+</head>
+<body>
+    <h1>Add two numbers A and B</h1>
+	<form>
+        <label>First number A:</label>
+        <input type="text" id="A">
+        <label>, second number B:</label>
+        <input type="text" id="B">
+        <!-- set button onClick method to call function we defined passing input values as parameters -->
+        <button type="button" onclick="callAPI(document.getElementById('A').value,document.getElementById('B').value)">CALCULATE</button>
+    </form>
+</body>
+</html>
