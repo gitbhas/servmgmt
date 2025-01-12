@@ -1,34 +1,194 @@
-# import the JSON utility package
 import json
-# import the Python math library
-import math
-
-# import the AWS SDK
 import boto3
-# import two packages gmtime and strftime
-from time import gmtime, strftime
+import time
 
-# create a DynamoDB object using the AWS SDK
-dynamodb = boto3.resource('dynamodb')
-# use the DynamoDB object to select our table -> dynamodb.Table('name of table')
-table = dynamodb.Table('PowerOfMathDatabase')
-# store the current time in a human readable format in a variable
-now_id = strftime("%Y%m%d%H%M%S", gmtime())
-
-# define the handler function that the Lambda service will use an entry point
 def lambda_handler(event, context):
+    """
+    Main handler for server management operations
+    """
+    try:
+        # Handle POST requests for actions
+        if event['httpMethod'] == 'POST':
+            body = json.loads(event['body'])
+            path = event['path']
 
-    mathResult = float(event['A']) + float(event['B'])
+            # Validate and route requests
+            if path == '/start-server':
+                if not body.get('serverName'):
+                    return build_response(400, 'Server name is required')
+                return start_server(body)
+                
+            elif path == '/stop-server':
+                if not body.get('serverName'):
+                    return build_response(400, 'Server name is required')
+                return stop_server(body)
+                
+            elif path == '/run-ssm':
+                if not body.get('serverName') or not body.get('documentName'):
+                    return build_response(400, 'Both server name and document name are required')
+                return run_ssm_document(body)
+                
+            else:
+                return build_response(400, 'Invalid path')
 
-# write result and time to the DynamoDB table using the object we instantiated and save response in a variable
-    response = table.put_item(
-        Item={
-            'ID':now_id,
-            'Sum': str(mathResult)
+    except Exception as e:
+        return build_response(500, f'Error in lambda_handler: {str(e)}')
+
+def start_server(body):
+    """
+    Starts an EC2 instance identified by name if not already running
+    """
+    try:
+        server_name = body['serverName']
+        ec2 = boto3.client('ec2')
+        
+        # Find instance by name tag
+        instance_id = get_instance_id_by_name(ec2, server_name)
+        if not instance_id:
+            return build_response(404, f'No instance found with name {server_name}')
+        
+        # Get current instance state
+        instance_state = get_instance_state(ec2, instance_id)
+        
+        # Start instance if not running
+        if instance_state == 'running':
+            return build_response(200, f'Server {server_name} is already running')
+        else:
+            ec2.start_instances(InstanceIds=[instance_id])
+            return build_response(200, {
+                'message': f'Server {server_name} start initiated successfully',
+                'instanceId': instance_id
             })
+        
+    except Exception as e:
+        return build_response(500, f'Error starting server: {str(e)}')
 
-# return a properly formatted JSON object
+def stop_server(body):
+    """
+    Stops an EC2 instance identified by name if not already stopped
+    """
+    try:
+        server_name = body['serverName']
+        parameters = body.get('parameters', {})
+        
+        ec2 = boto3.client('ec2')
+        
+        # Find instance by name tag
+        instance_id = get_instance_id_by_name(ec2, server_name)
+        if not instance_id:
+            return build_response(404, f'No instance found with name {server_name}')
+        
+        # Get current instance state
+        instance_state = get_instance_state(ec2, instance_id)
+        
+        # Stop instance if not stopped
+        if instance_state == 'stopped':
+            return build_response(200, f'Server {server_name} is already stopped')
+        else:
+            # Check for force stop parameter
+            force = parameters.get('force', False)
+            if force:
+                ec2.stop_instances(InstanceIds=[instance_id], Force=True)
+            else:
+                ec2.stop_instances(InstanceIds=[instance_id])
+            
+            return build_response(200, {
+                'message': f'Server {server_name} stop initiated successfully',
+                'instanceId': instance_id
+            })
+        
+    except Exception as e:
+        return build_response(500, f'Error stopping server: {str(e)}')
+
+def run_ssm_document(body):
+    """
+    Runs an SSM document on a specified server
+    """
+    try:
+        server_name = body['serverName']
+        document_name = body['documentName']
+        parameters = body.get('parameters', {})
+        
+        # Create clients
+        ssm = boto3.client('ssm')
+        ec2 = boto3.client('ec2')
+        
+        # Find instance by name tag
+        instance_id = get_instance_id_by_name(ec2, server_name)
+        if not instance_id:
+            return build_response(404, f'No instance found with name {server_name}')
+        
+        # Check if instance is running
+        instance_state = get_instance_state(ec2, instance_id)
+        if instance_state != 'running':
+            # Attempt to start the instance if it's not running
+            ec2.start_instances(InstanceIds=[instance_id])
+            
+            # Wait for instance to be running (max 60 seconds)
+            waiter = ec2.get_waiter('instance_running')
+            try:
+                waiter.wait(
+                    InstanceIds=[instance_id],
+                    WaiterConfig={'Delay': 5, 'MaxAttempts': 12}
+                )
+            except Exception as e:
+                return build_response(400, f'Timeout waiting for server {server_name} to start')
+        
+        # Run the SSM document
+        response = ssm.send_command(
+            InstanceIds=[instance_id],
+            DocumentName=document_name,
+            Parameters=parameters
+        )
+        
+        command_id = response['Command']['CommandId']
+        
+        return build_response(200, {
+            'message': f'SSM document execution initiated',
+            'commandId': command_id,
+            'instanceId': instance_id
+        })
+        
+    except Exception as e:
+        return build_response(500, f'Error running SSM document: {str(e)}')
+
+def get_instance_id_by_name(ec2_client, server_name):
+    """
+    Helper function to get instance ID from server name
+    """
+    response = ec2_client.describe_instances(
+        Filters=[
+            {
+                'Name': 'tag:Name',
+                'Values': [server_name]
+            }
+        ]
+    )
+    
+    if response['Reservations'] and response['Reservations'][0]['Instances']:
+        return response['Reservations'][0]['Instances'][0]['InstanceId']
+    return None
+
+def get_instance_state(ec2_client, instance_id):
+    """
+    Helper function to get instance state
+    """
+    response = ec2_client.describe_instances(InstanceIds=[instance_id])
+    return response['Reservations'][0]['Instances'][0]['State']['Name']
+
+def build_response(status_code, body):
+    """
+    Helper function to build consistent response format with CORS headers
+    """
     return {
-    'statusCode': 200,
-    'body': json.dumps('Your result is ' + str(mathResult))
+        'statusCode': status_code,
+        'headers': {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+            'Access-Control-Allow-Methods': 'POST,OPTIONS'
+        },
+        'body': json.dumps(body)
     }
+
+   

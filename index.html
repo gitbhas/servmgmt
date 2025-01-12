@@ -2,85 +2,613 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Add two number A and B</title>
-    <!-- Styling for the client UI -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Server Management Console</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
     <style>
-    h1 {
-    color: #ff6f61; /* coral */
-    font-family: system-ui;
-    margin-left: 20px;
-}
-
-/* Define the styles for body */
-body {
-    background-color: #2c3e50; /* midnight blue */
-}
-
-/* Define the styles for labels */
-label {
-    color: #f3b745; /* mustard yellow */
-    font-family: system-ui;
-    font-size: 20px;
-    margin-left: 20px;
-    margin-top: 20px;
-}
-
-/* Define the styles for buttons */
-button {
-    background-color: #70a1ff; /* dodger blue */
-    border-color: #70a1ff;
-    color: #FFFFFF;
-    font-family: system-ui;
-    font-size: 20px;
-    font-weight: bold;
-    margin-left: 30px;
-    margin-top: 20px;
-    width: 140px;
-}
-
-/* Define the styles for inputs */
-input {
-    color: #2ecc71; /* emerald green */
-    font-family: system-ui;
-    font-size: 20px;
-    margin-left: 10px;
-    margin-top: 20px;
-    width: 100px;
-}
-    </style>
-    <script>
-        // callAPI function that takes the base and exponent numbers as parameters
-        var callAPI = (A,B)=>{
-            // instantiate a headers object
-            var myHeaders = new Headers();
-            // add content type header to object
-            myHeaders.append("Content-Type", "application/json");
-            // using built in JSON utility package turn object to string and store in a variable
-            var raw = JSON.stringify({"A":A,"B":B});
-            // create a JSON object with parameters for API call and store in a variable
-            var requestOptions = {
-                method: 'POST',
-                headers: myHeaders,
-                body: raw,
-                redirect: 'follow'
-            };
-            // make API call with parameters and use promises to get response
-            fetch("https://zhh2h87zci.execute-api.us-east-1.amazonaws.com/dev", requestOptions)
-            .then(response => response.text())
-            .then(result => alert(JSON.parse(result).body))
-            .catch(error => console.log('error', error));
+        :root {
+            --aws-blue: #232F3E;
+            --aws-orange: #FF9900;
+            --aws-light-blue: #0073BB;
+            --aws-bg: #F2F3F3;
+            --aws-success: #1D8102;
+            --aws-error: #D13212;
+            --aws-border: #E9EAEA;
+            --aws-hover: #FAFAFA;
         }
-    </script>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--aws-bg);
+            color: var(--aws-blue);
+            line-height: 1.5;
+        }
+
+        .navbar {
+            background-color: var(--aws-blue);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .navbar-logo {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--aws-blue);
+        }
+
+        .card-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .card-header {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--aws-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--aws-blue);
+        }
+
+        .card-body {
+            padding: 1.25rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--aws-blue);
+        }
+
+        select, input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--aws-border);
+            border-radius: 4px;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        select:hover, input:hover {
+            background-color: var(--aws-hover);
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--aws-light-blue);
+            box-shadow: 0 0 0 2px rgba(0,115,187,0.2);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background-color: var(--aws-orange);
+            color: var(--aws-blue);
+        }
+
+        .btn-danger {
+            background-color: var(--aws-error);
+            color: white;
+        }
+
+        .btn:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status-bar {
+            background: white;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 1.5rem;
+            border-left: 4px solid var(--aws-light-blue);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 0.5rem;
+            color: var(--aws-light-blue);
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--aws-blue);
+            color: white;
+            text-align: center;
+            border-radius: 4px;
+            padding: 0.5rem;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.875rem;
+            font-weight: normal;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .card-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Add two numbers A and B</h1>
-	<form>
-        <label>First number A:</label>
-        <input type="text" id="A">
-        <label>, second number B:</label>
-        <input type="text" id="B">
-        <!-- set button onClick method to call function we defined passing input values as parameters -->
-        <button type="button" onclick="callAPI(document.getElementById('A').value,document.getElementById('B').value)">CALCULATE</button>
-    </form>
+    <nav class="navbar">
+        <div class="navbar-logo">AWS Server Management</div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">Server Management Console</h1>
+        </div>
+
+        <div class="card-container">
+            <!-- Start Server Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Start Server</h2>
+                </div>
+                <div class="card-body">
+                    <form id="startServerForm">
+                        <div class="form-group">
+                            <label for="serverSelect">Select Server</label>
+                            <select id="serverSelect" required>
+                                <option value=""></option>
+                                <option value="ddps-dev-ef01">ddps-dev-ef01</option>
+                                <option value="ddps-tst-ef01">ddps-tst-ef01</option>
+                                <option value="ddps-int-ef01">ddps-int-ef01</option>
+								<option value="ddps-prd-ef01">ddps-prd-ef01</option>
+								<option value="prs-prd-ap01">prs-prd-ap01</option>
+								<option value="prs-tst-ap01">prs-tst-ap01</option>
+								<option value="prs-int-ap01">prs-int-ap01</option>
+								
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                Parameters (Optional)
+                                <div class="tooltip">ⓘ
+                                    <span class="tooltiptext">Additional start parameters in JSON format</span>
+                                </div>
+                            </label>
+                            <input type="text" id="startParameters" placeholder='{"key": "value"}'>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="startServer()">Start Server</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Stop Server Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Stop Server</h2>
+                </div>
+                <div class="card-body">
+                    <form id="stopServerForm">
+                        <div class="form-group">
+                            <label for="stopServerSelect">Select Server</label>
+                            <select id="stopServerSelect" required>
+                                <option value=""></option>
+                                 <option value="ddps-dev-ef01">ddps-dev-ef01</option>
+                                <option value="ddps-tst-ef01">ddps-tst-ef01</option>
+                                <option value="ddps-int-ef01">ddps-int-ef01</option>
+								<option value="ddps-prd-ef01">ddps-prd-ef01</option>
+								<option value="prs-prd-ap01">prs-prd-ap01</option>
+								<option value="prs-tst-ap01">prs-tst-ap01</option>
+								<option value="prs-int-ap01">prs-int-ap01</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                Parameters (Optional)
+                                <div class="tooltip">ⓘ
+                                    <span class="tooltiptext">Force stop: {"force": true}</span>
+                                </div>
+                            </label>
+                            <input type="text" id="stopParameters" placeholder='{"force": false}'>
+                        </div>
+                        <button type="button" class="btn btn-danger" onclick="stopServer()">Stop Server</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Run SSM Document Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Run SSM Document</h2>
+                </div>
+                <div class="card-body">
+                    <form id="ssmForm">
+                        <div class="form-group">
+                            <label for="ssmServerSelect">Target Server</label>
+                            <select id="ssmServerSelect" required>
+                                <option value="ddps-dev-ef01">ddps-dev-ef01</option>
+                                <option value="ddps-tst-ef01">ddps-tst-ef01</option>
+                                <option value="ddps-int-ef01">ddps-int-ef01</option>
+								<option value="ddps-prd-ef01">ddps-prd-ef01</option>
+								<option value="prs-prd-ap01">prs-prd-ap01</option>
+								<option value="prs-tst-ap01">prs-tst-ap01</option>
+								<option value="prs-int-ap01">prs-int-ap01</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="documentSelect">SSM Document</label>
+                            <select id="documentSelect" required>
+                                <option value=""></option>
+                                <option value="DDPS-Clear-S3FS-Cache">DDPS-Clear-S3FS-Cache</option>
+                                <option value="ddps-s3fs-cache-prs">ddps-s3fs-cache-prs</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                Parameters (Optional)
+                                <div class="tooltip">ⓘ
+                                    <span class="tooltiptext">Document parameters in JSON format</span>
+                                </div>
+                            </label>
+                            <input type="text" id="parameters" placeholder='{"commands": ["echo Hello"]}'>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="runSSMDocument()">Run SSM Document</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar" id="result">
+            Status: Ready
+        </div>
+    </div>
+
+    <script>
+        // API Configuration - Replace with your API Gateway URL
+        const API_ENDPOINT = 'https://3loz81r0bg.execute-api.us-east-1.amazonaws.com/initial';
+
+        // Helper function to show success message
+        function showSuccess(message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <div style="display: flex; align-items: center;">
+                    <span style="color: var(--aws-success); margin-right: 8px;">✓</span>
+                    <span>${message}</span>
+                </div>
+            `;
+            resultDiv.style.borderLeft = '4px solid var(--aws-success)';
+        }
+
+        // Helper function to show error message
+        function showError(message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <div style="display: flex; align-items: center;">
+                    <span style="color: var(--aws-error); margin-right: 8px;">✕</span>
+                    <span>${message}</span>
+                </div>
+            `;
+            resultDiv.style.borderLeft = '4px solid var(--aws-error)';
+        }
+
+           // Start Server
+function startServer() {
+    const serverName = document.getElementById('serverSelect').value;
+    const parameters = document.getElementById('startParameters').value;
+
+    if (!serverName) {
+        showError('Please select a server');
+        return;
+    }
+
+    // Disable the button and show loading state
+    const button = document.querySelector('#startServerForm button');
+    button.disabled = true;
+    
+    // Show loading state
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = `Processing: Starting server ${serverName}...`;
+    resultDiv.style.borderLeft = '4px solid var(--aws-light-blue)';
+
+    // Log the request details
+    console.log('Request URL:', `${API_ENDPOINT}/start-server`);
+    console.log('Request Body:', {
+        serverName: serverName,
+        parameters: parameters ? JSON.parse(parameters) : {}
+    });
+
+    fetch(`${API_ENDPOINT}/start-server`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        mode: 'cors', // Add this line
+        body: JSON.stringify({
+            serverName: serverName,
+            parameters: parameters ? JSON.parse(parameters) : {}
+        })
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(`HTTP error! status: ${response.status}, message: ${text}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        
+        if (typeof data === 'string') {
+            try {
+                data = JSON.parse(data);
+            } catch (e) {
+                console.log('Could not parse response as JSON:', e);
+            }
+        }
+
+        if (data.body) {
+            try {
+                const bodyData = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
+                showSuccess(bodyData.message || `Server ${serverName} start initiated successfully`);
+            } catch (e) {
+                showSuccess(data.body);
+            }
+        } else {
+            showSuccess(data.message || `Server ${serverName} start initiated successfully`);
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        showError(`Failed to start server: ${error.message}`);
+    })
+    .finally(() => {
+        // Re-enable the button
+        button.disabled = false;
+    });
+}
+
+// Helper function to show success message with debugging
+function showSuccess(message) {
+    console.log('Success message:', message);
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = `
+        <div style="display: flex; align-items: center;">
+            <span style="color: var(--aws-success); margin-right: 8px;">✓</span>
+            <span>${message}</span>
+        </div>
+    `;
+    resultDiv.style.borderLeft = '4px solid var(--aws-success)';
+}
+
+// Helper function to show error message with debugging
+function showError(message) {
+    console.log('Error message:', message);
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = `
+        <div style="display: flex; align-items: center;">
+            <span style="color: var(--aws-error); margin-right: 8px;">✕</span>
+            <span>${message}</span>
+        </div>
+    `;
+    resultDiv.style.borderLeft = '4px solid var(--aws-error)';
+}
+
+
+        // Stop Server
+        function stopServer() {
+            const serverName = document.getElementById('stopServerSelect').value;
+            const parameters = document.getElementById('stopParameters').value;
+
+            if (!serverName) {
+                showError('Please select a server');
+                return;
+            }
+
+            // Show loading state
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `Processing: Stopping server ${serverName}...`;
+            resultDiv.style.borderLeft = '4px solid var(--aws-light-blue)';
+
+            fetch(`${API_ENDPOINT}/stop-server`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    serverName: serverName,
+                    parameters: parameters ? JSON.parse(parameters) : {}
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Raw response:', data); // For debugging
+                if (data.body) {
+                    try {
+                        const bodyData = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
+                        showSuccess(bodyData.message || `Server ${serverName} stop initiated successfully`);
+                    } catch (e) {
+                        showSuccess(data.body);
+                    }
+                } else {
+                    showSuccess(data.message || `Server ${serverName} stop initiated successfully`);
+                }
+            })
+            .catch(error => {
+                showError(`Failed to stop server: ${error.message}`);
+                console.error('Error:', error);
+            });
+        }
+
+        // Run SSM Document
+        function runSSMDocument() {
+            const serverName = document.getElementById('ssmServerSelect').value;
+            const documentName = document.getElementById('documentSelect').value;
+            const parameters = document.getElementById('parameters').value;
+
+            if (!serverName || !documentName) {
+                showError('Please select both server and SSM document');
+                return;
+            }
+
+            // Show loading state
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `Processing: Running ${documentName} on ${serverName}...`;
+            resultDiv.style.borderLeft = '4px solid var(--aws-light-blue)';
+
+            fetch(`${API_ENDPOINT}/run-ssm`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    serverName: serverName,
+                    documentName: documentName,
+                    parameters: parameters ? JSON.parse(parameters) : {}
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Raw response:', data); // For debugging
+                if (data.body) {
+                    try {
+                        const bodyData = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
+                        showSuccess(bodyData.message || `SSM document execution initiated successfully`);
+                    } catch (e) {
+                        showSuccess(data.body);
+                    }
+                } else {
+                    showSuccess(data.message || `SSM document execution initiated successfully`);
+                }
+            })
+            .catch(error => {
+                showError(`Failed to run SSM document: ${error.message}`);
+                console.error('Error:', error);
+            });
+        }
+// Add this function after your other JavaScript code
+function testApiConnection() {
+    console.log('Testing API connection...');
+    fetch(`${API_ENDPOINT}/start-server`, {
+        method: 'OPTIONS',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        console.log('CORS pre-flight response:', response);
+        showSuccess('API connection test successful');
+    })
+    .catch(error => {
+        console.error('API connection test failed:', error);
+        showError(`API connection test failed: ${error.message}`);
+    });
+}
+
+// Call this when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('API Endpoint:', API_ENDPOINT);
+    testApiConnection();
+});
+
+    </script>
 </body>
 </html>
